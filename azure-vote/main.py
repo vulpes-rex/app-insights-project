@@ -76,8 +76,22 @@ if ("TITLE" in os.environ and os.environ['TITLE']):
 else:
     title = app.config['TITLE']
 
-# Redis Connection
-r = redis.Redis()
+ # Comment/remove the next two lines of code.
+   # Redis Connection to a local server running on the same machine where the current FLask app is running. 
+   # r = redis.Redis()
+   # Redis configurations
+redis_server = os.environ['REDIS']
+# Redis Connection to another container
+try:
+    if "REDIS_PWD" in os.environ:
+        r = redis.StrictRedis(host=redis_server,
+            port=6379,
+            password=os.environ['REDIS_PWD'])
+    else:
+        r = redis.Redis(redis_server)
+    r.ping()
+except redis.ConnectionError:
+    exit('Failed to connect to Redis, terminating.')
 
 # Change title to host name to demo NLB
 if app.config['SHOWHOST'] == "true":
@@ -116,12 +130,12 @@ def index():
             vote1 = r.get(button1).decode('utf-8')
             properties = {'custom_dimensions': {'Cats Vote': vote1}}
             # TODO: use logger object to log cat vote
-            logger.info('cat vote', extra=properties)
+            logger.info('Cats Vote', extra=properties)
 
             vote2 = r.get(button2).decode('utf-8')
             properties = {'custom_dimensions': {'Dogs Vote': vote2}}
             # TODO: use logger object to log dog vote
-            logger.info('dog vote', extra=properties)
+            logger.info('Dogs Vote', extra=properties)
 
             return render_template("index.html", value1=int(vote1), value2=int(vote2), button1=button1, button2=button2, title=title)
 
